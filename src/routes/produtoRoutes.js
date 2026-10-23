@@ -1,14 +1,17 @@
+
 import { Router } from 'express';
-import * as controller from './produtoController.js';
+import * as controller from '../controllers/produtoController.js';
+import { autenticar, permitirPerfis } from '../middlewares/auth.js';
 
 const router = Router();
 
-// IMPORTANTE: /baixo-estoque vem antes de /:id.
+router.use(autenticar);
+
 router.get('/baixo-estoque', controller.listarAbaixoDoLimite);
 router.post('/', controller.cadastrar);
 router.get('/', controller.listar);
 router.get('/:id', controller.buscarPorId);
 router.put('/:id', controller.atualizar);
-router.delete('/:id', controller.deletar);
+router.delete('/:id', permitirPerfis('ADMINISTRADOR'), controller.deletar);
 
 export default router;
