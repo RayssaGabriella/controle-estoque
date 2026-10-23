@@ -1,3 +1,4 @@
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -5,6 +6,11 @@ generator client {
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
+}
+
+enum Perfil {
+  OPERADOR
+  ADMINISTRADOR
 }
 
 model Produto {
@@ -17,14 +23,28 @@ model Produto {
   @@map("produto")
 }
 
+model Usuario {
+  id            Int            @id @default(autoincrement())
+  nome          String
+  email         String         @unique
+  senha         String
+  perfil        Perfil         @default(OPERADOR)
+  movimentacoes Movimentacao[]
+
+  @@map("usuario")
+}
+
 model Movimentacao {
   id               Int      @id @default(autoincrement())
   tipo             String
   quantidade       Int
   dataMovimentacao DateTime @default(now()) @map("data_movimentacao")
   produtoId        Int      @map("produto_id")
+  usuarioId        Int?     @map("usuario_id")
   produto          Produto  @relation(fields: [produtoId], references: [id], onDelete: Restrict)
+  usuario          Usuario? @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
 
   @@index([produtoId])
+  @@index([usuarioId])
   @@map("movimentacao")
 }

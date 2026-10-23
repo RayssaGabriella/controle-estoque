@@ -5,10 +5,15 @@ export async function cadastrar(req, res, next) {
   catch (erro) { next(erro); }
 }
 
+
 export async function listar(req, res, next) {
-  try { res.json(await produtoService.listar()); }
-  catch (erro) { next(erro); }
+  try {
+    res.json(await produtoService.listar(req.query));
+  } catch (erro) {
+    next(erro);
+  }
 }
+
 
 export async function buscarPorId(req, res, next) {
   try { res.json(await produtoService.buscarPorId(Number(req.params.id))); }

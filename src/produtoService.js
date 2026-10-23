@@ -21,9 +21,35 @@ export async function cadastrar(dto) {
   return prisma.produto.create({ data: dto });
 }
 
-export async function listar() {
-  return prisma.produto.findMany({ orderBy: { id: 'asc' } });
+
+export async function listar({ pagina = 1, limite = 10, nome = '' } = {}) {
+  const paginaNumero = Math.max(1, Number(pagina) || 1);
+  const limiteNumero = Math.min(100, Math.max(1, Number(limite) || 10));
+  const filtroNome = String(nome).trim();
+
+  const where = filtroNome
+    ? { nome: { contains: filtroNome } }
+    : {};
+
+  const [produtos, total] = await Promise.all([
+    prisma.produto.findMany({
+      where,
+      orderBy: { id: 'asc' },
+      skip: (paginaNumero - 1) * limiteNumero,
+      take: limiteNumero
+    }),
+    prisma.produto.count({ where })
+  ]);
+
+  return {
+    dados: produtos,
+    pagina: paginaNumero,
+    limite: limiteNumero,
+    total,
+    totalPaginas: Math.ceil(total / limiteNumero)
+  };
 }
+
 
 export async function buscarPorId(id) {
   const produto = await prisma.produto.findUnique({ where: { id } });
@@ -37,14 +63,26 @@ export async function atualizar(id, dto) {
   return prisma.produto.update({ where: { id }, data: dto });
 }
 
+
 export async function deletar(id) {
   await buscarPorId(id);
+
+  const movimentacoes = await prisma.movimentacao.count({
+    where: { produtoId: id }
+  });
+
+  if (movimentacoes > 0) {
+    throw new Error(
+      'Não é possível excluir este produto porque existem movimentações vinculadas a ele.'
+    );
+  }
+
   await prisma.produto.delete({ where: { id } });
 }
 
+
 export async function listarAbaixoDoLimite() {
-  // A comparação coluna x coluna não é expressa diretamente por findMany;
-  // usamos SQL parametrizado pelo Prisma para manter a regra do projeto original.
+  
   return prisma.$queryRaw`
     SELECT id, nome, quantidade, limite_minimo AS limiteMinimo
     FROM produto
